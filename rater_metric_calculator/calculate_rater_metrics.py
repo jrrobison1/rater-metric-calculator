@@ -6,12 +6,22 @@ from scipy import stats
 from statsmodels.stats.inter_rater import fleiss_kappa
 from sklearn.metrics import cohen_kappa_score
 from dataclasses import dataclass
-from tabulate import tabulate
+from mdutils.mdutils import MdUtils
 
 # Constants
 MIN_RATING = 1
 MAX_RATING = 5
 RATING_RANGE = range(MIN_RATING, MAX_RATING + 1)
+PAIRWISE_TABLE_HEADER = [
+    "Other Rater",
+    "Krippendorff Alpha",
+    "Cohen Kappa",
+    "% Exact Agreements",
+    "% Agreement on 1's",
+    "% Agreement on 5's",
+    "Mean Absolute Score Difference",
+    "Spearman Correlation",
+]
 
 
 def calculate_krippendorff_alpha(data: pd.DataFrame) -> float:
@@ -41,15 +51,6 @@ def calculate_fleiss_kappa(data: pd.DataFrame) -> float:
     """
 
     def fleiss_kappa_input(data: pd.DataFrame) -> np.ndarray:
-        """
-        Prepare input data for Fleiss' kappa calculation.
-
-        Args:
-            data (pd.DataFrame): DataFrame containing ratings from multiple raters.
-
-        Returns:
-            np.ndarray: Array of rating counts for each item and category.
-        """
         ratings = []
         for i in range(data.shape[0]):
             row = data.iloc[i].value_counts().reindex(RATING_RANGE, fill_value=0).values
@@ -196,8 +197,26 @@ def calculate_pairwise_metrics(
     )
 
 
+def calculate_pairwise_metrics_for_all(
+    data: pd.DataFrame,
+) -> dict[str, list[PairwiseResult]]:
+    raters = data.columns
+    results = {}
+
+    for rater in raters:
+        pairwise_results = []
+        for other_rater in raters:
+            if rater != other_rater:
+                metrics = calculate_pairwise_metrics(data, rater, other_rater)
+                pairwise_results.append(metrics)
+        pairwise_results.sort(key=lambda x: x.kripp_alpha, reverse=True)
+        results[rater] = pairwise_results
+
+    return results
+
+
 # Overall calculations
-def print_overall_metrics(data: pd.DataFrame) -> None:
+def calculate_overall_metrics(data: pd.DataFrame):
     kripp_alpha = calculate_krippendorff_alpha(data)
     fleiss_kappa_val = calculate_fleiss_kappa(data)
     overall_percent_agreement = calculate_overall_percent_agreement(data)
@@ -221,65 +240,61 @@ def print_overall_metrics(data: pd.DataFrame) -> None:
         ],
     ]
 
-    print("## Overall Metrics")
-    print(tabulate(overall_metrics, headers="firstrow", tablefmt="pipe"))
+    return overall_metrics
 
 
-def print_ratings_distribution(data: pd.DataFrame):
-    print("\n## Ratings Distribution (%)")
-    distribution = calculate_rating_distribution(data)
-    print(distribution.to_markdown(floatfmt=".2f"))
+def write_markdown(
+    overall_metrics: list[list[str]],
+    ratings_distribution: pd.DataFrame,
+    pairwise_metrics: dict[str, list[PairwiseResult]],
+):
+    md_file = MdUtils(file_name="output", title="Rater Metrics Report")
 
+    md_file.new_header(level=2, title="Overall Metrics", add_table_of_contents="n")
+    md_file.new_table(
+        columns=len(overall_metrics[0]),
+        rows=len(overall_metrics),
+        text=sum(overall_metrics, []),
+        text_align="left",
+    )
 
-# Pairwise calculations for each rater
-def print_pairwise_metrics(data: pd.DataFrame) -> None:
-    raters = data.columns
-    results = []
-
-    for rater in raters:
-        pairwise_results = []
-        for other_rater in raters:
-            if rater != other_rater:
-                metrics = calculate_pairwise_metrics(data, rater, other_rater)
-                pairwise_results.append(metrics)
-        pairwise_results.sort(key=lambda x: x.kripp_alpha, reverse=True)
-        results.append((rater, pairwise_results))
-
-    print("\n## Pairwise Metrics")
-
-    # Display results using tabulate
-    for rater, pairwise_results in results:
-        print(f"### Rater: {rater}")
-
-        table_data = [
+    md_file.new_header(
+        level=2, title="Ratings Distribution (%)", add_table_of_contents="n"
+    )
+    md_file.new_table(
+        columns=len(ratings_distribution.columns) + 1,
+        rows=len(ratings_distribution.index) + 1,
+        text=["Rating"]
+        + list(ratings_distribution.columns)
+        + sum(
             [
-                "Other Rater",
-                "Krippendorff Alpha",
-                "Cohen Kappa",
-                "% Exact Agreements",
-                "% Agreement on 1's",
-                "% Agreement on 5's",
-                "Mean Absolute Score Difference",
-                "Spearman Correlation",
-            ]
-        ]
+                [str(idx)] + [f"{val:.1f}%" for val in row]
+                for idx, row in ratings_distribution.iterrows()
+            ],
+            [],
+        ),
+    )
 
+    md_file.new_header(level=2, title="Pairwise", add_table_of_contents="n")
+    for rater, pairwise_results in pairwise_metrics.items():
+        md_file.new_header(level=3, title=f"Rater: {rater}", add_table_of_contents="n")
+        table_data = [PAIRWISE_TABLE_HEADER]
         for result in pairwise_results:
-            table_data.append(
+            table_data.extend(
                 [
                     result.other_rater,
                     f"{result.kripp_alpha:.3f}",
                     f"{result.cohen_kappa:.3f}",
-                    f"{result.percent_agreement:.1f}",
-                    f"{result.ones_agreement:.1f}",
-                    f"{result.fives_agreement:.1f}",
+                    f"{result.percent_agreement:.1f}%",
+                    f"{result.ones_agreement:.1f}%",
+                    f"{result.fives_agreement:.1f}%",
                     f"{result.mad:.1f}",
                     f"{result.correlation:.1f}",
                 ]
             )
+        md_file.new_table(columns=8, rows=len(pairwise_results) + 1, text=table_data)
 
-        print(tabulate(table_data, headers="firstrow", tablefmt="pipe"))
-        print("\n")
+    md_file.create_md_file()
 
 
 def main(file_name: str) -> None:
@@ -289,12 +304,13 @@ def main(file_name: str) -> None:
     Args:
         file_name (str): Path to the CSV file containing rating data.
     """
-    # Load the data
     data = pd.read_csv(file_name)
 
-    print_overall_metrics(data)
-    print_ratings_distribution(data)
-    print_pairwise_metrics(data)
+    overall_metrics = calculate_overall_metrics(data)
+    ratings_distribution = calculate_rating_distribution(data)
+    pairwise_metrics = calculate_pairwise_metrics_for_all(data)
+
+    write_markdown(overall_metrics, ratings_distribution, pairwise_metrics)
 
 
 if __name__ == "__main__":

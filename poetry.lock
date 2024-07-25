@@ -334,6 +334,16 @@ python-dateutil = ">=2.7"
 dev = ["meson-python (>=0.13.1)", "numpy (>=1.25)", "pybind11 (>=2.6)", "setuptools (>=64)", "setuptools_scm (>=7)"]
 
 [[package]]
+name = "mdutils"
+version = "1.6.0"
+description = "Useful package for creating Markdown files while executing python code."
+optional = false
+python-versions = "^3.6"
+files = [
+    {file = "mdutils-1.6.0.tar.gz", hash = "sha256:647f3cf00df39fee6c57fa6738dc1160fce1788276b5530c87d43a70cdefdaf1"},
+]
+
+[[package]]
 name = "numpy"
 version = "2.0.0"
 description = "Fundamental package for array computing in Python"
@@ -887,4 +897,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "a8a2827668643f0eb18050c972899c9d88d84112b6a3a3e895a5cfa590579339"
+content-hash = "27f484337947f21504353872e27632ac6f093aa84206820792ec63f91e5165b5"
