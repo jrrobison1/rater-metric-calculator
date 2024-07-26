@@ -7,6 +7,7 @@ from statsmodels.stats.inter_rater import fleiss_kappa
 from sklearn.metrics import cohen_kappa_score
 from dataclasses import dataclass
 from mdutils.mdutils import MdUtils
+from typing import List, Dict
 
 # Constants
 MIN_RATING = 1
@@ -199,7 +200,7 @@ def calculate_pairwise_metrics(
 
 def calculate_pairwise_metrics_for_all(
     data: pd.DataFrame,
-) -> dict[str, list[PairwiseResult]]:
+) -> Dict[str, List[PairwiseResult]]:
     raters = data.columns
     results = {}
 
@@ -216,7 +217,7 @@ def calculate_pairwise_metrics_for_all(
 
 
 # Overall calculations
-def calculate_overall_metrics(data: pd.DataFrame):
+def calculate_overall_metrics(data: pd.DataFrame) -> List[List[str]]:
     kripp_alpha = calculate_krippendorff_alpha(data)
     fleiss_kappa_val = calculate_fleiss_kappa(data)
     overall_percent_agreement = calculate_overall_percent_agreement(data)
@@ -244,11 +245,11 @@ def calculate_overall_metrics(data: pd.DataFrame):
 
 
 def write_markdown(
-    overall_metrics: list[list[str]],
+    overall_metrics: List[List[str]],
     ratings_distribution: pd.DataFrame,
-    pairwise_metrics: dict[str, list[PairwiseResult]],
+    pairwise_metrics: Dict[str, List[PairwiseResult]],
     output_file: str,
-):
+) -> None:
     md_file = MdUtils(file_name=output_file, title="Rater Metrics Report")
 
     md_file.new_header(level=2, title="Overall Metrics", add_table_of_contents="n")
