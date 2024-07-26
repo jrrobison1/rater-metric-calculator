@@ -232,6 +232,15 @@ def calculate_pairwise_metrics(
 def calculate_pairwise_metrics_for_all(
     data: pd.DataFrame,
 ) -> Dict[str, List[PairwiseResult]]:
+    """
+    Calculate pairwise metrics for all raters in the dataset.
+
+    Args:
+        data (pd.DataFrame): DataFrame containing ratings from multiple raters.
+
+    Returns:
+        Dict[str, List[PairwiseResult]]: Dictionary with raters as keys and lists of PairwiseResult objects as values.
+    """
     raters = data.columns
     results = {}
 
@@ -247,8 +256,16 @@ def calculate_pairwise_metrics_for_all(
     return results
 
 
-# Overall calculations
 def calculate_overall_metrics(data: pd.DataFrame) -> List[List[str]]:
+    """
+    Calculate overall metrics for the entire dataset.
+
+    Args:
+        data (pd.DataFrame): DataFrame containing ratings from multiple raters.
+
+    Returns:
+        List[List[str]]: List of lists containing overall metric names, values, and notes.
+    """
     kripp_alpha = calculate_krippendorff_alpha(data)
     fleiss_kappa_val = calculate_fleiss_kappa(data)
     overall_percent_agreement = calculate_overall_percent_agreement(data)
@@ -281,6 +298,15 @@ def write_markdown(
     pairwise_metrics: Dict[str, List[PairwiseResult]],
     output_file: str,
 ) -> None:
+    """
+    Write the calculated metrics to a markdown file.
+
+    Args:
+        overall_metrics (List[List[str]]): Overall metrics data.
+        ratings_distribution (pd.DataFrame): Distribution of ratings for each rater.
+        pairwise_metrics (Dict[str, List[PairwiseResult]]): Pairwise metrics for all raters.
+        output_file (str): Path to the output markdown file.
+    """
     md_file = MdUtils(file_name=output_file, title="Rater Metrics Report")
 
     md_file.new_header(level=2, title="Overall Metrics", add_table_of_contents="n")
