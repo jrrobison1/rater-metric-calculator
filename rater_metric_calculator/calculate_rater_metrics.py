@@ -33,8 +33,15 @@ def calculate_krippendorff_alpha(data: pd.DataFrame) -> float:
         data (pd.DataFrame): DataFrame containing ratings from multiple raters.
 
     Returns:
-        float: Krippendorff's alpha value.
+        float: Krippendorff's alpha value. Returns 1.0 if all ratings are equal.
+
+    Raises:
+        ValueError: If the input DataFrame is empty.
     """
+    if data.empty:
+        raise ValueError("Input DataFrame is empty")
+    if data.nunique().eq(1).all():
+        return 1.0
     return krippendorff.alpha(
         reliability_data=data.T.values, level_of_measurement="ordinal"
     )
@@ -48,8 +55,15 @@ def calculate_fleiss_kappa(data: pd.DataFrame) -> float:
         data (pd.DataFrame): DataFrame containing ratings from multiple raters.
 
     Returns:
-        float: Fleiss' kappa value.
+        float: Fleiss' kappa value. Returns 1.0 if all ratings are equal.
+
+    Raises:
+        ValueError: If there's one rater or no raters in the data.
     """
+    if data.shape[1] < 2:
+        raise ValueError("Fleiss' kappa requires at least two raters.")
+    if data.nunique().eq(1).all():
+        return 1.0
 
     def fleiss_kappa_input(data: pd.DataFrame) -> np.ndarray:
         ratings = []
@@ -71,7 +85,12 @@ def calculate_overall_percent_agreement(data: pd.DataFrame) -> float:
 
     Returns:
         float: Percentage of exact agreements.
+
+    Raises:
+        ValueError: If the input DataFrame is empty.
     """
+    if data.empty:
+        raise ValueError("Input DataFrame is empty")
     total_agreements = sum(data.nunique(axis=1) == 1)
     return (total_agreements / len(data)) * 100
 
@@ -84,8 +103,15 @@ def calculate_kendalls_w(data: pd.DataFrame) -> float:
         data (pd.DataFrame): DataFrame containing ratings from multiple raters.
 
     Returns:
-        float: Kendall's W value.
+        float: Kendall's W value. Returns 1.0 if all ratings are equal.
+
+    Raises:
+        ValueError: If the input DataFrame is empty.
     """
+    if data.empty:
+        raise ValueError("Input DataFrame is empty")
+    if data.nunique().eq(1).all():
+        return 1.0
     n = data.shape[0]  # number of subjects
     k = data.shape[1]  # number of raters
 
@@ -110,7 +136,12 @@ def calculate_mean_absolute_difference(data: pd.DataFrame) -> float:
 
     Returns:
         float: Mean absolute difference.
+
+    Raises:
+        ValueError: If the input DataFrame is empty.
     """
+    if data.empty:
+        raise ValueError("Input DataFrame is empty")
     return np.mean(
         [
             np.abs(data[col1] - data[col2]).mean()
