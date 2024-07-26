@@ -247,8 +247,9 @@ def write_markdown(
     overall_metrics: list[list[str]],
     ratings_distribution: pd.DataFrame,
     pairwise_metrics: dict[str, list[PairwiseResult]],
+    output_file: str,
 ):
-    md_file = MdUtils(file_name="output", title="Rater Metrics Report")
+    md_file = MdUtils(file_name=output_file, title="Rater Metrics Report")
 
     md_file.new_header(level=2, title="Overall Metrics", add_table_of_contents="n")
     md_file.new_table(
@@ -278,7 +279,7 @@ def write_markdown(
     md_file.new_header(level=2, title="Pairwise", add_table_of_contents="n")
     for rater, pairwise_results in pairwise_metrics.items():
         md_file.new_header(level=3, title=f"Rater: {rater}", add_table_of_contents="n")
-        table_data = [PAIRWISE_TABLE_HEADER]
+        table_data = [] + PAIRWISE_TABLE_HEADER
         for result in pairwise_results:
             table_data.extend(
                 [
@@ -297,21 +298,27 @@ def write_markdown(
     md_file.create_md_file()
 
 
-def main(file_name: str) -> None:
+def main(input_file: str, output_file: str) -> None:
     """
     Main function to calculate and display inter-rater reliability metrics.
 
     Args:
-        file_name (str): Path to the CSV file containing rating data.
+        input_file (str): Path to the CSV file containing rating data.
+        output_file (str): Path to the output markdown file.
     """
-    data = pd.read_csv(file_name)
+    data = pd.read_csv(input_file)
 
     overall_metrics = calculate_overall_metrics(data)
     ratings_distribution = calculate_rating_distribution(data)
     pairwise_metrics = calculate_pairwise_metrics_for_all(data)
 
-    write_markdown(overall_metrics, ratings_distribution, pairwise_metrics)
+    write_markdown(overall_metrics, ratings_distribution, pairwise_metrics, output_file)
 
 
 if __name__ == "__main__":
-    main(argv[1])
+    if len(argv) != 3:
+        print(
+            "Usage: python calculate_rater_metrics.py <input_csv_file> <output_md_file>"
+        )
+        exit(1)
+    main(argv[1], argv[2])
