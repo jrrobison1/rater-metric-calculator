@@ -1,15 +1,15 @@
+from dataclasses import dataclass
 from sys import argv
+from typing import Dict, List
+
+import krippendorff
 import numpy as np
 import pandas as pd
-import krippendorff
-from scipy import stats
-from statsmodels.stats.inter_rater import fleiss_kappa
-from sklearn.metrics import cohen_kappa_score
-from dataclasses import dataclass
 from mdutils.mdutils import MdUtils
-from typing import List, Dict
+from scipy import stats
+from sklearn.metrics import cohen_kappa_score
+from statsmodels.stats.inter_rater import fleiss_kappa
 
-# Constants
 MIN_RATING = 1
 MAX_RATING = 5
 RATING_RANGE = range(MIN_RATING, MAX_RATING + 1)
@@ -42,6 +42,7 @@ def calculate_krippendorff_alpha(data: pd.DataFrame) -> float:
         raise ValueError("Input DataFrame is empty")
     if data.nunique().eq(1).all():
         return 1.0
+
     return krippendorff.alpha(
         reliability_data=data.T.values, level_of_measurement="ordinal"
     )
@@ -73,6 +74,7 @@ def calculate_fleiss_kappa(data: pd.DataFrame) -> float:
         return ratings
 
     ratings = fleiss_kappa_input(data)
+
     return fleiss_kappa(ratings)
 
 
@@ -92,6 +94,7 @@ def calculate_overall_percent_agreement(data: pd.DataFrame) -> float:
     if data.empty:
         raise ValueError("Input DataFrame is empty")
     total_agreements = sum(data.nunique(axis=1) == 1)
+
     return (total_agreements / len(data)) * 100
 
 
@@ -142,6 +145,7 @@ def calculate_mean_absolute_difference(data: pd.DataFrame) -> float:
     """
     if data.empty:
         raise ValueError("Input DataFrame is empty")
+
     return np.mean(
         [
             np.abs(data[col1] - data[col2]).mean()
