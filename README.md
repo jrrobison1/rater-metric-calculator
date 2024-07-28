@@ -1,4 +1,5 @@
 # rater-metric-calculator
+[![CI](https://github.com/jrrobison1/rater-metric-calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/jrrobison1/rater-metric-calculator/actions/workflows/ci.yml) 
 
 rater-metric-calculator is a Python tool designed to calculate several inter-rater reliability metrics for multi-rater datasets. It provides a comprehensive set of metrics to evaluate agreement among raters, and prints the results to a convenient well-formatted Markdown report. This tool is ideal for researchers working with subjective ratings or annotations.
 
