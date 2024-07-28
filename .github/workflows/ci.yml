@@ -1,0 +1,33 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_ACTIONS: true
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+    - name: Install dependencies
+      run: |
+        poetry install
+    - name: Run tests
+      run: |
+        poetry run pytest --cov=./ --cov-report=xml
+    - name: Check code coverage
+      run: |
+        poetry run coverage report --fail-under=70
