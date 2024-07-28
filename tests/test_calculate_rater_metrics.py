@@ -13,6 +13,8 @@ from rater_metric_calculator.calculate_rater_metrics import (
     calculate_overall_metrics,
     PairwiseResult,
 )
+from unittest.mock import patch, mock_open
+from rater_metric_calculator.calculate_rater_metrics import main
 
 
 @pytest.fixture
@@ -161,3 +163,42 @@ def test_all_different_ratings():
         and calculate_kendalls_w(diff_ratings_df) < 1
     )
     assert calculate_mean_absolute_difference(diff_ratings_df) > 0
+
+
+@patch("rater_metric_calculator.calculate_rater_metrics.analyze_with_llm")
+@patch("rater_metric_calculator.calculate_rater_metrics.get_markdown_report")
+@patch("rater_metric_calculator.calculate_rater_metrics.pd.read_csv")
+@patch("builtins.open", new_callable=mock_open)
+def test_main_with_llm(
+    mock_file_open, mock_read_csv, mock_get_markdown_report, mock_analyze_with_llm
+):
+    mock_read_csv.return_value = pd.DataFrame(
+        {"Rater1": [1, 2, 3], "Rater2": [1, 2, 3]}
+    )
+    mock_get_markdown_report.return_value.get_md_text.return_value = "Markdown content"
+    mock_analyze_with_llm.return_value = "LLM analysis result"
+
+    main("input.csv", "output.md", use_llm=True, llm_report_file="llm_report.md")
+
+    mock_read_csv.assert_called_once_with("input.csv")
+    mock_get_markdown_report.assert_called_once()
+    mock_analyze_with_llm.assert_called_once_with("Markdown content")
+
+    mock_file_open.assert_called_with("llm_report.md", "w")
+    mock_file_open().write.assert_called_once_with("LLM analysis result")
+
+
+@patch("rater_metric_calculator.calculate_rater_metrics.get_markdown_report")
+@patch("rater_metric_calculator.calculate_rater_metrics.pd.read_csv")
+def test_main_without_llm(mock_read_csv, mock_get_markdown_report):
+    mock_read_csv.return_value = pd.DataFrame(
+        {"Rater1": [1, 2, 3], "Rater2": [1, 2, 3]}
+    )
+
+    main("input.csv", "output.md")
+
+    mock_read_csv.assert_called_once_with("input.csv")
+    mock_get_markdown_report.assert_called_once()
+    mock_get_markdown_report.return_value.create_md_file.assert_called_once()
+
+    mock_get_markdown_report.return_value.get_md_text.assert_not_called()
