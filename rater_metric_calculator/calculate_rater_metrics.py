@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from sys import argv
 from typing import Dict, List
+from dotenv import load_dotenv
 
 import krippendorff
 import numpy as np
@@ -9,6 +10,8 @@ from mdutils.mdutils import MdUtils
 from scipy import stats
 from sklearn.metrics import cohen_kappa_score
 from statsmodels.stats.inter_rater import fleiss_kappa
+
+from rater_metric_calculator.llm.analyze_with_llm import analyze_with_llm
 
 MIN_RATING = 1
 MAX_RATING = 5
@@ -296,12 +299,12 @@ def calculate_overall_metrics(data: pd.DataFrame) -> List[List[str]]:
     return overall_metrics
 
 
-def write_markdown(
+def get_markdown_report(
     overall_metrics: List[List[str]],
     ratings_distribution: pd.DataFrame,
     pairwise_metrics: Dict[str, List[PairwiseResult]],
     output_file: str,
-) -> None:
+) -> MdUtils:
     """
     Write the calculated metrics to a markdown file.
 
@@ -357,30 +360,62 @@ def write_markdown(
             )
         md_file.new_table(columns=8, rows=len(pairwise_results) + 1, text=table_data)
 
-    md_file.create_md_file()
+    return md_file
 
 
-def main(input_file: str, output_file: str) -> None:
+def main(
+    input_file: str,
+    output_file: str,
+    use_llm: bool = False,
+    llm_report_file: str = None,
+) -> None:
     """
     Main function to calculate and display inter-rater reliability metrics.
 
     Args:
         input_file (str): Path to the CSV file containing rating data.
         output_file (str): Path to the output markdown file.
+        use_llm (bool): Flag to use LLM for analysis. Defaults to False.
+        llm_report_file (str): Path to the LLM report file. Required if use_llm is True.
     """
+    load_dotenv()
+
     data = pd.read_csv(input_file)
 
     overall_metrics = calculate_overall_metrics(data)
     ratings_distribution = calculate_rating_distribution(data)
     pairwise_metrics = calculate_pairwise_metrics_for_all(data)
 
-    write_markdown(overall_metrics, ratings_distribution, pairwise_metrics, output_file)
+    report = get_markdown_report(
+        overall_metrics, ratings_distribution, pairwise_metrics, output_file
+    )
+    report.create_md_file()
+    print(f"Report created at {output_file}")
+
+    if use_llm:
+        llm_report = analyze_with_llm(report.get_md_text())
+        with open(llm_report_file, "w") as file:
+            file.write(llm_report)
+        print(f"LLM report created at {llm_report_file}")
 
 
 if __name__ == "__main__":
-    if len(argv) != 3:
-        print(
-            "Usage: python calculate_rater_metrics.py <input_csv_file> <output_md_file>"
-        )
-        exit(1)
-    main(argv[1], argv[2])
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Calculate rater metrics")
+    parser.add_argument("input_csv_file", help="Path to the input CSV file")
+    parser.add_argument("output_md_file", help="Path to the output markdown file")
+    parser.add_argument("--use-llm", action="store_true", help="Use LLM for analysis")
+    parser.add_argument("--llm-report-file", help="Path to the LLM report file")
+
+    args = parser.parse_args()
+
+    if args.use_llm and not args.llm_report_file:
+        parser.error("--llm-report-file is required when --use-llm is set")
+
+    main(
+        args.input_csv_file,
+        args.output_md_file,
+        use_llm=args.use_llm,
+        llm_report_file=args.llm_report_file,
+    )
