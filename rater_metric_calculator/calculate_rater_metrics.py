@@ -368,6 +368,7 @@ def main(
     output_file: str,
     use_llm: bool = False,
     llm_report_file: str = None,
+    prompt_file: str = None,
 ) -> None:
     """
     Main function to calculate and display inter-rater reliability metrics.
@@ -377,6 +378,7 @@ def main(
         output_file (str): Path to the output markdown file.
         use_llm (bool): Flag to use LLM for analysis. Defaults to False.
         llm_report_file (str): Path to the LLM report file. Required if use_llm is True.
+        prompt_file (str): Path to a custom prompt text file for LLM analysis.
     """
     load_dotenv()
 
@@ -393,7 +395,7 @@ def main(
     print(f"Report created at {output_file}")
 
     if use_llm:
-        llm_report = analyze_with_llm(report.get_md_text())
+        llm_report = analyze_with_llm(report.get_md_text(), prompt_file)
         with open(llm_report_file, "w") as file:
             file.write(llm_report)
         print(f"LLM report created at {llm_report_file}")
@@ -407,15 +409,22 @@ if __name__ == "__main__":
     parser.add_argument("output_md_file", help="Path to the output markdown file")
     parser.add_argument("--use-llm", action="store_true", help="Use LLM for analysis")
     parser.add_argument("--llm-report-file", help="Path to the LLM report file")
+    parser.add_argument(
+        "--prompt-file", help="Path to a custom prompt text file for LLM analysis"
+    )
 
     args = parser.parse_args()
 
     if args.use_llm and not args.llm_report_file:
         parser.error("--llm-report-file is required when --use-llm is set")
 
+    if args.prompt_file and not args.use_llm:
+        parser.error("--prompt-file can only be used when --use-llm is set")
+
     main(
         args.input_csv_file,
         args.output_md_file,
         use_llm=args.use_llm,
         llm_report_file=args.llm_report_file,
+        prompt_file=args.prompt_file if args.use_llm else None,
     )
