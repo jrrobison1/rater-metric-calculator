@@ -380,25 +380,41 @@ def main(
         llm_report_file (str): Path to the LLM report file. Required if use_llm is True.
         prompt_file (str): Path to a custom prompt text file for LLM analysis.
     """
-    load_dotenv()
+    try:
+        load_dotenv()
 
-    data = pd.read_csv(input_file)
+        data = pd.read_csv(input_file)
 
-    overall_metrics = calculate_overall_metrics(data)
-    ratings_distribution = calculate_rating_distribution(data)
-    pairwise_metrics = calculate_pairwise_metrics_for_all(data)
+        overall_metrics = calculate_overall_metrics(data)
+        ratings_distribution = calculate_rating_distribution(data)
+        pairwise_metrics = calculate_pairwise_metrics_for_all(data)
 
-    report = get_markdown_report(
-        overall_metrics, ratings_distribution, pairwise_metrics, output_file
-    )
-    report.create_md_file()
-    print(f"Report created at {output_file}")
+        report = get_markdown_report(
+            overall_metrics, ratings_distribution, pairwise_metrics, output_file
+        )
+        report.create_md_file()
+        print(f"Report created at {output_file}")
 
-    if use_llm:
-        llm_report = analyze_with_llm(report.get_md_text(), prompt_file)
-        with open(llm_report_file, "w") as file:
-            file.write(llm_report)
-        print(f"LLM report created at {llm_report_file}")
+        if use_llm:
+            try:
+                llm_report = analyze_with_llm(report.get_md_text(), prompt_file)
+                with open(llm_report_file, "w") as file:
+                    file.write(llm_report)
+                print(f"LLM report created at {llm_report_file}")
+            except Exception as e:
+                print(f"Error during LLM analysis: {str(e)}")
+                print("Continuing without LLM analysis.")
+
+    except FileNotFoundError as e:
+        print(f"Error: File not found - {str(e)}")
+    except pd.errors.EmptyDataError:
+        print(f"Error: The input file '{input_file}' is empty.")
+    except pd.errors.ParserError as e:
+        print(f"Error parsing CSV file: {str(e)}")
+    except ValueError as e:
+        print(f"Error in calculations: {str(e)}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {str(e)}")
 
 
 if __name__ == "__main__":
