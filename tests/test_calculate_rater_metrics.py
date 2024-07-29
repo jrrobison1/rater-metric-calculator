@@ -182,7 +182,7 @@ def test_main_with_llm(
 
     mock_read_csv.assert_called_once_with("input.csv")
     mock_get_markdown_report.assert_called_once()
-    mock_analyze_with_llm.assert_called_once_with("Markdown content")
+    mock_analyze_with_llm.assert_called_once_with("Markdown content", None)
 
     mock_file_open.assert_called_with("llm_report.md", "w")
     mock_file_open().write.assert_called_once_with("LLM analysis result")
