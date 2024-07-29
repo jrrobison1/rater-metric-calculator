@@ -36,24 +36,31 @@ To install the Rater Metric Calculator, you'll need Python 3.10 or higher. We re
 To use the Rater Metric Calculator, run the following command:
 
 ```
-poetry run python rater_metric_calculator/calculate_rater_metrics.py <input_csv_file> <output_md_file> [--generate-llm-report] [--llm-report-file <llm_report_file>]
+poetry run python rater_metric_calculator/calculate_rater_metrics.py <input_csv_file> <output_md_file> [--use-llm] [--llm-report-file <llm_report_file>] [--prompt-file <prompt_file>]
 ```
 
 Replace `<input_csv_file>` with the path to your CSV file containing rating data, and `<output_md_file>` with the desired path for the output Markdown report.
 
-To generate an AI-powered interpretation report using Claude 3.5 Sonnet, add the `--generate-llm-report` flag to the command. When using this flag, you must also specify the `--llm-report-file` option with the desired path for the LLM report output file.
+To generate an AI-powered interpretation report using Claude 3.5 Sonnet, add the `--use-llm` flag to the command. When using this flag, you must also specify the `--llm-report-file` option with the desired path for the LLM report output file.
 
 ### LLM Report Generation
 
-When the `--generate-llm-report` flag is used, the script will:
+When the `--use-llm` flag is used, the script will:
 1. Generate the standard metrics report
 2. Use the Claude 3.5 Sonnet model to analyze the report
 3. Save the AI-generated interpretation to the file specified by `--llm-report-file`
 
 Example command with LLM report generation:
 ```
-poetry run python rater_metric_calculator/calculate_rater_metrics.py input_data.csv output_report.md --generate-llm-report --llm-report-file llm_interpretation.md
+poetry run python rater_metric_calculator/calculate_rater_metrics.py input_data.csv output_report.md --use-llm --llm-report-file llm_interpretation.md
 ```
+
+You can also specify a custom prompt file for the LLM analysis using the `--prompt-file` option:
+```
+poetry run python rater_metric_calculator/calculate_rater_metrics.py input_data.csv output_report.md --use-llm --llm-report-file llm_interpretation.md --prompt-file custom_prompt.txt
+```
+
+If no prompt file is specified, the script will use a default prompt for the analysis.
 
 Note: To use the LLM report generation feature, you need to set the `ANTHROPIC_API_KEY` environment variable with your Anthropic API key.
 
